@@ -15,7 +15,7 @@ import (
 )
 
 // authUnaryInterceptor - миделвара для аутентификации пользователей через JWT токен
-func (h *grpcRecordHandler) authUnaryInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+func (h *GrpcRecordHandler) authUnaryInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 	// Пропускаем аутентификацию для методов других пакетов
 	if info.FullMethod != pb.RecordService_CreateRecord_FullMethodName &&
 		info.FullMethod != pb.RecordService_GetRecord_FullMethodName &&
@@ -49,7 +49,7 @@ type serverStreamWrapper struct {
 func (s *serverStreamWrapper) Context() context.Context {
 	return s.ctx
 }
-func (h *grpcRecordHandler) authStreamInterceptor(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+func (h *GrpcRecordHandler) authStreamInterceptor(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 	if info.FullMethod != pb.RecordService_UploadFile_FullMethodName &&
 		info.FullMethod != pb.RecordService_DownloadFile_FullMethodName {
 		return handler(srv, ss)
@@ -74,7 +74,7 @@ func (h *grpcRecordHandler) authStreamInterceptor(srv interface{}, ss grpc.Serve
 }
 
 // getUserId извлекает ID пользователя из контекста
-func (h *grpcRecordHandler) getUserId(ctx context.Context) (int, error) {
+func (h *GrpcRecordHandler) getUserId(ctx context.Context) (int, error) {
 	userId, ok := ctx.Value("user_id").(int)
 	if !ok {
 		return 0, status.Errorf(codes.Internal, "failed to get user id from context")

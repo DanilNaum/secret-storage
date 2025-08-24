@@ -11,17 +11,17 @@ import (
 
 type handler interface {
 	RegisterServer(gRPC *grpc.Server)
-	GetUnaryInterseptors()[]grpc.UnaryServerInterceptor
+	GetUnaryInterseptors() []grpc.UnaryServerInterceptor
 	GetStreamInterseptors() []grpc.StreamServerInterceptor
 }
 
-type grpcServer struct {
+type GrpcServer struct {
 	port   int
 	server *grpc.Server
 	notify chan error
 }
 
-func NewGrpcServer(port int, handlers ...handler) *grpcServer {
+func NewGrpcServer(port int, handlers ...handler) *GrpcServer {
 	unaryInterseptors := make([]grpc.UnaryServerInterceptor, 0, 4)
 	for _, handler := range handlers {
 		unaryInterseptors = append(unaryInterseptors, handler.GetUnaryInterseptors()...)
@@ -37,14 +37,14 @@ func NewGrpcServer(port int, handlers ...handler) *grpcServer {
 		handler.RegisterServer(grpcServ)
 	}
 
-	return &grpcServer{
+	return &GrpcServer{
 		port:   port,
 		server: grpcServ,
 		notify: make(chan error),
 	}
 }
 
-func (s *grpcServer) Run(ctx context.Context) {
+func (s *GrpcServer) Run(ctx context.Context) {
 	list, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%d", s.port))
 	if err != nil {
 		s.notify <- err
@@ -56,13 +56,12 @@ func (s *grpcServer) Run(ctx context.Context) {
 	}()
 	go func() {
 		<-ctx.Done()
-		s.server.GracefulStop()	
+		s.server.GracefulStop()
 		s.notify <- ctx.Err()
 	}()
 
-	
 }
 
-func (s *grpcServer) Notify() <-chan error {
+func (s *GrpcServer) Notify() <-chan error {
 	return s.notify
 }

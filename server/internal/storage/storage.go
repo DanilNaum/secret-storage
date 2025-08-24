@@ -16,19 +16,19 @@ var (
 	ErrNotFound          = errors.New("not found")
 )
 
-type storage struct {
+type Storage struct {
 	conn *pgxpool.Pool
 }
 
 // NewStorage creates a new storage instance with the provided database connection pool.
 // It returns a pointer to the storage struct.
-func NewStorage(conn *pgxpool.Pool) *storage {
-	return &storage{
+func NewStorage(conn *pgxpool.Pool) *Storage {
+	return &Storage{
 		conn: conn,
 	}
 }
 
-func (s *storage) CreateUser(ctx context.Context, user *entity.UserDTO) (int, error) {
+func (s *Storage) CreateUser(ctx context.Context, user *entity.UserDTO) (int, error) {
 	query := "INSERT INTO users (login, password_hash, salt) VALUES ($1, $2, $3) RETURNING uuid"
 
 	var id int
@@ -46,7 +46,7 @@ func (s *storage) CreateUser(ctx context.Context, user *entity.UserDTO) (int, er
 	return id, nil
 }
 
-func (s *storage) GetUserByLogin(ctx context.Context, login string) (*entity.UserDTO, error) {
+func (s *Storage) GetUserByLogin(ctx context.Context, login string) (*entity.UserDTO, error) {
 	query := "SELECT uuid, login, password_hash, salt FROM users WHERE login = $1"
 
 	var user entity.UserDTO
@@ -61,11 +61,11 @@ func (s *storage) GetUserByLogin(ctx context.Context, login string) (*entity.Use
 	return &user, nil
 }
 
-func (s *storage) CreateRecord(ctx context.Context, userID int, record *entity.RecordInfo) (error) {
+func (s *Storage) CreateRecord(ctx context.Context, userID int, record *entity.RecordInfo) error {
 	query := "INSERT into records (id, name, type_id) VALUES ($1, $2, (SELECT id FROM record_types WHERE type_name = $3))"
 	tx, err := s.conn.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
-		return  err
+		return err
 	}
 	_, err = tx.Exec(ctx, query, record.ID, record.Name, record.Type.String())
 	if err != nil {
@@ -77,13 +77,13 @@ func (s *storage) CreateRecord(ctx context.Context, userID int, record *entity.R
 	_, err = tx.Exec(ctx, query, userID, record.ID)
 	if err != nil {
 		tx.Rollback(ctx)
-		return  err
+		return err
 	}
 	tx.Commit(ctx)
 	return nil
 }
 
-func (s *storage) DeleteRecord(ctx context.Context, userID int, recordID string) error {
+func (s *Storage) DeleteRecord(ctx context.Context, userID int, recordID string) error {
 	query := "DELETE FROM user_records WHERE user_id = $1 AND record_id = $2"
 	tx, err := s.conn.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
@@ -103,7 +103,7 @@ func (s *storage) DeleteRecord(ctx context.Context, userID int, recordID string)
 	tx.Commit(ctx)
 	return nil
 }
-func (s *storage) GetRecord(ctx context.Context, userID int, recordID string) (*entity.RecordInfo, error) {
+func (s *Storage) GetRecord(ctx context.Context, userID int, recordID string) (*entity.RecordInfo, error) {
 	query := `SELECT id, name, (SELECT type_name FROM record_types WHERE id = r.type_id) AS type_name 
           FROM records r 
           WHERE id = $1 AND id IN (SELECT record_id FROM user_records WHERE user_id = $2)`
@@ -120,7 +120,7 @@ func (s *storage) GetRecord(ctx context.Context, userID int, recordID string) (*
 	record.Type = entity.RecordTypeFromString(recordType)
 	return &record, nil
 }
-func (s *storage) ListRecords(ctx context.Context, userID int) ([]*entity.RecordInfo, error) {
+func (s *Storage) ListRecords(ctx context.Context, userID int) ([]*entity.RecordInfo, error) {
 	query := "SELECT id, name, (SELECT type_name FROM record_types WHERE id = r.type_id) AS type_name FROM records r WHERE id IN (SELECT record_id FROM user_records WHERE user_id = $1)"
 	rows, err := s.conn.Query(ctx, query, userID)
 	if err != nil {
@@ -144,7 +144,7 @@ func (s *storage) ListRecords(ctx context.Context, userID int) ([]*entity.Record
 	return records, nil
 }
 
-func (s *storage) UpdateRecord(ctx context.Context, userID int, record *entity.RecordInfo) error {
+func (s *Storage) UpdateRecord(ctx context.Context, userID int, record *entity.RecordInfo) error {
 	query := "SELECT (SELECT type_name FROM record_types WHERE id = r.type_id) AS type_name FROM  records r WHERE id = $1"
 	var currentRecordType string
 	err := s.conn.QueryRow(ctx, query, record.ID).Scan(&currentRecordType)
@@ -165,8 +165,7 @@ func (s *storage) UpdateRecord(ctx context.Context, userID int, record *entity.R
 	return nil
 }
 
-
-func (s *storage) CreateCredential(ctx context.Context,recordId string,cred *entity.Credential)error{
+func (s *Storage) CreateCredential(ctx context.Context, recordId string, cred *entity.Credential) error {
 	qwery := "INSERT INTO credentials (record_id, login, password) VALUES ($1, $2, $3) ON CONFLICT (record_id) DO UPDATE SET login = $2, password = $3"
 	_, err := s.conn.Exec(ctx, qwery, recordId, cred.Username, cred.Password)
 	if err != nil {
@@ -174,8 +173,8 @@ func (s *storage) CreateCredential(ctx context.Context,recordId string,cred *ent
 	}
 	return nil
 }
-func (s *storage) GetCredential(ctx context.Context, recordId string)(*entity.Credential,error){
-	qwery :=	"SELECT login, password FROM credentials WHERE record_id = $1"
+func (s *Storage) GetCredential(ctx context.Context, recordId string) (*entity.Credential, error) {
+	qwery := "SELECT login, password FROM credentials WHERE record_id = $1"
 	var cred entity.Credential
 	err := s.conn.QueryRow(ctx, qwery, recordId).Scan(&cred.Username, &cred.Password)
 	if err != nil {
@@ -183,7 +182,7 @@ func (s *storage) GetCredential(ctx context.Context, recordId string)(*entity.Cr
 	}
 	return &cred, nil
 }
-func (s *storage) UpdateCredential(ctx context.Context,recordId string,cred *entity.Credential)error{
+func (s *Storage) UpdateCredential(ctx context.Context, recordId string, cred *entity.Credential) error {
 	qwery := "UPDATE credentials SET login = $1, password = $2 WHERE record_id = $3"
 	_, err := s.conn.Exec(ctx, qwery, cred.Username, cred.Password, recordId)
 	if err != nil {
@@ -191,7 +190,7 @@ func (s *storage) UpdateCredential(ctx context.Context,recordId string,cred *ent
 	}
 	return nil
 }
-func (s *storage) DeleteCredential(ctx context.Context, recordId string)error{
+func (s *Storage) DeleteCredential(ctx context.Context, recordId string) error {
 	qwery := "DELETE FROM credentials WHERE record_id = $1"
 	_, err := s.conn.Exec(ctx, qwery, recordId)
 	if err != nil {
@@ -200,7 +199,7 @@ func (s *storage) DeleteCredential(ctx context.Context, recordId string)error{
 	return nil
 }
 
-func (s *storage) CreateText(ctx context.Context,recordId string,text *entity.Text)error{
+func (s *Storage) CreateText(ctx context.Context, recordId string, text *entity.Text) error {
 	qwery := "INSERT INTO credentials (record_id, content) VALUES ($1, $2) ON CONFLICT (record_id) DO UPDATE SET credentials = $2"
 	_, err := s.conn.Exec(ctx, qwery, recordId, text.Content)
 	if err != nil {
@@ -208,8 +207,8 @@ func (s *storage) CreateText(ctx context.Context,recordId string,text *entity.Te
 	}
 	return nil
 }
-func (s *storage) GetText(ctx context.Context, recordId string)(*entity.Text,error){
-	qwery :=	"SELECT content FROM text WHERE record_id = $1"
+func (s *Storage) GetText(ctx context.Context, recordId string) (*entity.Text, error) {
+	qwery := "SELECT content FROM text WHERE record_id = $1"
 	var text entity.Text
 	err := s.conn.QueryRow(ctx, qwery, recordId).Scan(&text.Content)
 	if err != nil {
@@ -217,7 +216,7 @@ func (s *storage) GetText(ctx context.Context, recordId string)(*entity.Text,err
 	}
 	return &text, nil
 }
-func (s *storage) UpdateText(ctx context.Context,recordId string,text *entity.Text)error{
+func (s *Storage) UpdateText(ctx context.Context, recordId string, text *entity.Text) error {
 	qwery := "UPDATE text SET content = $1 WHERE record_id = $2"
 	_, err := s.conn.Exec(ctx, qwery, text.Content, recordId)
 	if err != nil {
@@ -225,7 +224,7 @@ func (s *storage) UpdateText(ctx context.Context,recordId string,text *entity.Te
 	}
 	return nil
 }
-func (s *storage) DeleteText(ctx context.Context, recordId string)error{
+func (s *Storage) DeleteText(ctx context.Context, recordId string) error {
 	qwery := "DELETE FROM text WHERE record_id = $1"
 	_, err := s.conn.Exec(ctx, qwery, recordId)
 	if err != nil {

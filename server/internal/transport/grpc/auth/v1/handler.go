@@ -14,20 +14,20 @@ type usecases interface {
 	Register(ctx context.Context, login, password string) (*entity.AuthData, error)
 }
 
-type grpcAuthHandler struct {
+type GrpcAuthHandler struct {
 	pb.UnimplementedAuthServiceServer
 	usecases usecases
 	grpcserver.Handler
 }
 
-func NewGrpcAuthHandler(usecases usecases) *grpcAuthHandler {
-	return &grpcAuthHandler{usecases: usecases}
+func NewGrpcAuthHandler(usecases usecases) *GrpcAuthHandler {
+	return &GrpcAuthHandler{usecases: usecases}
 }
-func (h *grpcAuthHandler) RegisterServer(gRPC *grpc.Server) {
+func (h *GrpcAuthHandler) RegisterServer(gRPC *grpc.Server) {
 	pb.RegisterAuthServiceServer(gRPC, h)
 }
 
-func (h *grpcAuthHandler) Authenticate(ctx context.Context, req *pb.AuthenticateRequest) (*pb.AuthenticateResponse, error) {
+func (h *GrpcAuthHandler) Authenticate(ctx context.Context, req *pb.AuthenticateRequest) (*pb.AuthenticateResponse, error) {
 	authData, err := h.usecases.Authenticate(ctx, req.Username, req.Password)
 	if err != nil {
 		return &pb.AuthenticateResponse{
@@ -43,12 +43,12 @@ func (h *grpcAuthHandler) Authenticate(ctx context.Context, req *pb.Authenticate
 }
 
 // I deside to use jwt token for authentication, so it is imposible to logout
-func (h *grpcAuthHandler) Logout(ctx context.Context, req *pb.LogoutRequest) (*pb.LogoutResponse, error) {
+func (h *GrpcAuthHandler) Logout(ctx context.Context, req *pb.LogoutRequest) (*pb.LogoutResponse, error) {
 	return &pb.LogoutResponse{
 		Success: true,
 	}, nil
 }
-func (h *grpcAuthHandler) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.RegisterResponse, error) {
+func (h *GrpcAuthHandler) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.RegisterResponse, error) {
 	authData, err := h.usecases.Register(ctx, req.Username, req.Password)
 	if err != nil {
 		return &pb.RegisterResponse{

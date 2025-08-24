@@ -58,7 +58,7 @@ type fileRepo interface {
 	GetFile(fileID string) (*filerepository.FileInfo, <-chan []byte, error)
 }
 
-type grpcRecordHandler struct {
+type GrpcRecordHandler struct {
 	pb.UnimplementedRecordServiceServer
 	jwtManager JWTManager[int]
 	usecase    usecase
@@ -66,27 +66,27 @@ type grpcRecordHandler struct {
 	fileRepo fileRepo
 }
 
-func NewGrpcRecordHandler(jwtManager JWTManager[int], usecase usecase, fileRepo fileRepo) *grpcRecordHandler {
-	return &grpcRecordHandler{jwtManager: jwtManager, usecase: usecase, fileRepo: fileRepo}
+func NewGrpcRecordHandler(jwtManager JWTManager[int], usecase usecase, fileRepo fileRepo) *GrpcRecordHandler {
+	return &GrpcRecordHandler{jwtManager: jwtManager, usecase: usecase, fileRepo: fileRepo}
 }
 
 type request interface {
 	GetAuthToken() string
 }
 
-func (h *grpcRecordHandler) GetUnaryInterseptors() []grpc.UnaryServerInterceptor {
+func (h *GrpcRecordHandler) GetUnaryInterseptors() []grpc.UnaryServerInterceptor {
 	return []grpc.UnaryServerInterceptor{h.authUnaryInterceptor}
 }
 
-func (h *grpcRecordHandler) GetStreamInterseptors() []grpc.StreamServerInterceptor {
+func (h *GrpcRecordHandler) GetStreamInterseptors() []grpc.StreamServerInterceptor {
 	return []grpc.StreamServerInterceptor{h.authStreamInterceptor}
 }
 
-func (h *grpcRecordHandler) RegisterServer(gRPC *grpc.Server) {
+func (h *GrpcRecordHandler) RegisterServer(gRPC *grpc.Server) {
 	pb.RegisterRecordServiceServer(gRPC, h)
 }
 
-func (h *grpcRecordHandler) CreateRecord(ctx context.Context, req *pb.CreateRecordRequest) (*pb.CreateRecordResponse, error) {
+func (h *GrpcRecordHandler) CreateRecord(ctx context.Context, req *pb.CreateRecordRequest) (*pb.CreateRecordResponse, error) {
 	userId, err := h.getUserId(ctx)
 	if err != nil {
 		return nil, err
@@ -105,7 +105,7 @@ func (h *grpcRecordHandler) CreateRecord(ctx context.Context, req *pb.CreateReco
 
 }
 
-func (h *grpcRecordHandler) DeleteRecord(ctx context.Context, req *pb.DeleteRecordRequest) (*pb.DeleteRecordResponse, error) {
+func (h *GrpcRecordHandler) DeleteRecord(ctx context.Context, req *pb.DeleteRecordRequest) (*pb.DeleteRecordResponse, error) {
 	userId, err := h.getUserId(ctx)
 	if err != nil {
 		return nil, err
@@ -122,7 +122,7 @@ func (h *grpcRecordHandler) DeleteRecord(ctx context.Context, req *pb.DeleteReco
 	}, nil
 }
 
-func (h *grpcRecordHandler) DownloadFile(req *pb.FileDownloadRequest, stream grpc.ServerStreamingServer[pb.FileDownloadResponse]) error {
+func (h *GrpcRecordHandler) DownloadFile(req *pb.FileDownloadRequest, stream grpc.ServerStreamingServer[pb.FileDownloadResponse]) error {
 
 	userId, err := h.getUserId(stream.Context())
 	if err != nil {
@@ -165,7 +165,7 @@ func (h *grpcRecordHandler) DownloadFile(req *pb.FileDownloadRequest, stream grp
 	return nil
 }
 
-func (h *grpcRecordHandler) GetRecord(ctx context.Context, req *pb.GetRecordRequest) (*pb.GetRecordResponse, error) {
+func (h *GrpcRecordHandler) GetRecord(ctx context.Context, req *pb.GetRecordRequest) (*pb.GetRecordResponse, error) {
 	userId, err := h.getUserId(ctx)
 	if err != nil {
 		return nil, err
@@ -183,7 +183,7 @@ func (h *grpcRecordHandler) GetRecord(ctx context.Context, req *pb.GetRecordRequ
 	}, nil
 }
 
-func (h *grpcRecordHandler) ListRecords(ctx context.Context, req *pb.ListRecordsRequest) (*pb.ListRecordsResponse, error) {
+func (h *GrpcRecordHandler) ListRecords(ctx context.Context, req *pb.ListRecordsRequest) (*pb.ListRecordsResponse, error) {
 	userId, err := h.getUserId(ctx)
 	if err != nil {
 		return nil, err
@@ -201,7 +201,7 @@ func (h *grpcRecordHandler) ListRecords(ctx context.Context, req *pb.ListRecords
 	}, nil
 }
 
-func (h *grpcRecordHandler) UpdateRecord(ctx context.Context, req *pb.UpdateRecordRequest) (*pb.UpdateRecordResponse, error) {
+func (h *GrpcRecordHandler) UpdateRecord(ctx context.Context, req *pb.UpdateRecordRequest) (*pb.UpdateRecordResponse, error) {
 	userId, err := h.getUserId(ctx)
 	if err != nil {
 		return nil, err
@@ -218,7 +218,7 @@ func (h *grpcRecordHandler) UpdateRecord(ctx context.Context, req *pb.UpdateReco
 	}, nil
 }
 
-func (h *grpcRecordHandler) UploadFile(stream grpc.ClientStreamingServer[pb.FileUploadRequest, pb.FileUploadResponse]) error {
+func (h *GrpcRecordHandler) UploadFile(stream grpc.ClientStreamingServer[pb.FileUploadRequest, pb.FileUploadResponse]) error {
 	userId, err := h.getUserId(stream.Context())
 	if err != nil {
 		return err
