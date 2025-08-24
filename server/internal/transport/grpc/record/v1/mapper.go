@@ -27,7 +27,7 @@ func recordToEntityRecord(r *pb.Record) *entity.Record {
 		}
 	case *pb.Record_FileData:
 		record.Type = entity.RecordTypeFile
-	
+
 	}
 	return record
 }
@@ -48,12 +48,13 @@ func recordFromEntityRecord(r *entity.Record) *pb.Record {
 	case entity.RecordTypeText:
 		record.Content = &pb.Record_TextData{
 			TextData: &pb.TextData{
-					// TextContent: r.Text.Content,
+				TextContent: r.Text.Content,
 			},
 		}
+		//  for that type content loading async using grpc stream
 	case entity.RecordTypeFile:
-		record.Content	= &pb.Record_FileData{
-		    
+		record.Content = &pb.Record_FileData{
+			FileData: &pb.FileData{},
 		}
 
 	}
@@ -62,8 +63,8 @@ func recordFromEntityRecord(r *entity.Record) *pb.Record {
 
 func serverRecordFromEntityRecordInfo(r *entity.RecordInfo) *pb.ServerRecord {
 	record := &pb.ServerRecord{
-		Id: r.ID,
-		Name:     r.Name,
+		Id:   r.ID,
+		Name: r.Name,
 	}
 	switch r.Type {
 	case entity.RecordTypeCredentials:
@@ -77,7 +78,7 @@ func serverRecordFromEntityRecordInfo(r *entity.RecordInfo) *pb.ServerRecord {
 }
 
 func serverRecordsFromEntityRecordsInfo(rs []*entity.RecordInfo) []*pb.ServerRecord {
-    records := make([]*pb.ServerRecord, 0, len(rs)) 
+	records := make([]*pb.ServerRecord, 0, len(rs))
 	for _, r := range rs {
 		records = append(records, serverRecordFromEntityRecordInfo(r))
 	}

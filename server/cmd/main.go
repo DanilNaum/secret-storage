@@ -61,7 +61,7 @@ func run(log *log.Logger) error {
 	authHandler := authhandler.NewGrpcAuthHandler(authUsecase)
 
 	recordUsecase := record.NewRecordUsecase(storage, storage, storage)
-fileRepo := filerepository.NewFileRepository("./files")
+	fileRepo := filerepository.NewFileRepository("./files")
 
 	recordHandler := recordhandler.NewGrpcRecordHandler(jwtManager, recordUsecase, fileRepo)
 	grpcserver := grpcserver.NewGrpcServer(conf.GetGRPCPort(), authHandler, recordHandler)

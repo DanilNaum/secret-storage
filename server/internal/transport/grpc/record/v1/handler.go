@@ -22,12 +22,36 @@ import (
 type JWTManager[T any] interface {
 	ParseToken(tokenString string) (T, error)
 }
-type usecase interface {
+
+//	type usecase interface {
+//		// CreateRecord(context.Context, int, *entity.Record) (string, error)
+//		// DeleteRecord(context.Context, int, string) error
+//		// GetRecord(context.Context, int, string) (*entity.Record, error)
+//		// ListRecords(context.Context, int) ([]*entity.RecordInfo, error)
+//		// UpdateRecord(context.Context, int, *entity.Record) error
+//	}
+type recordCreator interface {
 	CreateRecord(context.Context, int, *entity.Record) (string, error)
-	DeleteRecord(context.Context, int, string) error
+}
+
+type recordReader interface {
 	GetRecord(context.Context, int, string) (*entity.Record, error)
 	ListRecords(context.Context, int) ([]*entity.RecordInfo, error)
+}
+
+type recordUpdater interface {
 	UpdateRecord(context.Context, int, *entity.Record) error
+}
+
+type recordDeleter interface {
+	DeleteRecord(context.Context, int, string) error
+}
+
+type usecase interface {
+	recordCreator
+	recordReader
+	recordUpdater
+	recordDeleter
 }
 type fileRepo interface {
 	SaveFile(metadata *filerepository.FileMetadata, chunks <-chan []byte, errChan <-chan error) error
@@ -220,11 +244,11 @@ func (h *grpcRecordHandler) UploadFile(stream grpc.ClientStreamingServer[pb.File
 	chunc := make(chan []byte, 1)
 	errChan := make(chan error, 1)
 	go func() {
-			defer close(chunc)
-			defer close(errChan)
+		defer close(chunc)
+		defer close(errChan)
 	LOOP:
 		for {
-		
+
 			req, err := stream.Recv()
 			if errors.Is(err, io.EOF) {
 				break LOOP
@@ -236,7 +260,7 @@ func (h *grpcRecordHandler) UploadFile(stream grpc.ClientStreamingServer[pb.File
 				},
 				)
 				errChan <- err
-				return 
+				return
 			}
 
 			switch r := req.Data.(type) {

@@ -153,30 +153,34 @@ func (a *App) downloadFileForm(record *models.Record) {
 	form.AddFormItem(progressFeeler)
 
 	form.AddButton("download", func() {
-		progress, errChan := a.serverHandlers.DownloadFile(record.ServerID, path)
-		LOOP:for {
-			select {
-			case progress, ok := <-progress:
-				if !ok {
-					break LOOP
-				}
-				progressFeeler.SetText(strconv.Itoa(progress) + "%")
-			case err, ok := <-errChan:
-				if !ok {
-					break LOOP
-				}
-				if err != nil {
-					a.showError(err.Error())
-					return
-				}
-			}
-		}
-		a.pages.SwitchToPage(constants.MainPageName)
-
+		a.downloadFile(record, progressFeeler, path)
 	})
 	form.AddButton("cancel", func() {
 		a.pages.SwitchToPage(constants.MainPageName)
 	})
 	a.pages.AddAndSwitchToPage(constants.FormPageName, form, true)
 
+}
+
+func (a *App) downloadFile(record *models.Record, progressFeeler *tview.TextView, path string) {
+	progress, errChan := a.serverHandlers.DownloadFile(record.ServerID, path)
+LOOP:
+	for {
+		select {
+		case progress, ok := <-progress:
+			if !ok {
+				break LOOP
+			}
+			progressFeeler.SetText(strconv.Itoa(progress) + "%")
+		case err, ok := <-errChan:
+			if !ok {
+				break LOOP
+			}
+			if err != nil {
+				a.showError(err.Error())
+				return
+			}
+		}
+	}
+	a.pages.SwitchToPage(constants.MainPageName)
 }
