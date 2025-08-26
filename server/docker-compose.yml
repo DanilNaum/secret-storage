@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+
+  app:
+    build: .
+    ports:
+      - "${GRPC_PORT}:${GRPC_PORT}"  # Порт для gRPC
+    depends_on:
+      - postgres
+    env_file:
+      - ./.env
+    volumes:
+      - ./.env:/app/.env
+    networks:
+      - secret-storage-network
+
+  # Сервис для PostgreSQL
+  postgres:
+    image: postgres:14-alpine
+    environment:
+      POSTGRES_USER: ${PSQL_DBUSER}
+      POSTGRES_PASSWORD: ${PSQL_DBPASS}
+      POSTGRES_DB: ${PSQL_DBNAME}
+    ports:
+      - "${PSQL_DBPORT}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - secret-storage-network
+
+volumes:
+  postgres_data:
+
+networks:
+  secret-storage-network:
+    driver: bridge

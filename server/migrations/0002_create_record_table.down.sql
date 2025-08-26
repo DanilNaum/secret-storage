@@ -1,0 +1,4 @@
+
+DROP TABLE IF EXISTS record_types;
+
+DROP TABLE IF EXISTS records;

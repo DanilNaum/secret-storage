@@ -1,0 +1,2 @@
+-- Active: 1723632330684@@127.0.0.1@5433@record
+DROP TABLE IF EXISTS user;
